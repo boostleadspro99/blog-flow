@@ -22,12 +22,12 @@ def get_engine():
     if _engine is None:
         if not settings.database_url:
             raise RuntimeError("DATABASE_URL is not configured.")
-        # Use sync engine with psycopg2 — simple, reliable, no async driver headaches
-        url = (
-            settings.database_url
-            .replace("+asyncpg", "+psycopg2")
-            .replace("+psycopg", "+psycopg2")
-        )
+        # Normalize to psycopg2 driver
+        url = settings.database_url
+        for prefix in ("+asyncpg", "+psycopg"):
+            if f"{prefix}://" in url:
+                url = url.replace(f"{prefix}://", "+psycopg2://")
+                break
         # Remove query params that confuse psycopg2
         for param in ("sslmode=require", "channel_binding=require"):
             url = url.replace(f"&{param}", "").replace(f"?{param}", "")
