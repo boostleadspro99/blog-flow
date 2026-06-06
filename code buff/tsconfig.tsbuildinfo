@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/components/ErrorMessage.tsx","./src/components/ImagePreview.tsx","./src/components/LoadingState.tsx","./src/components/ModelSelect.tsx","./src/components/PromptForm.tsx","./src/lib/geminiClient.ts","./src/lib/models.ts"],"version":"5.9.3"}

@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "PuterImage Studio — Gemini Cookie Extractor",
+  "version": "1.0",
+  "description": "Automatically extract your Gemini cookies and send them to PuterImage Studio for image generation.",
+  "permissions": ["cookies", "storage"],
+  "host_permissions": ["https://*.google.com/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Gemini Cookies"
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}

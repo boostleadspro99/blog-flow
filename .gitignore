@@ -1,0 +1,23 @@
+# Env
+.env
+
+# Node
+node_modules/
+dist/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# IDE
+.vscode/
+.idx/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude
+.claude/
+.agents/

@@ -1,0 +1,9 @@
+{
+  "name": "code-beuf",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix \"code buff\"",
+    "build": "npm run build --prefix \"code buff\"",
+    "preview": "npm run preview --prefix \"code buff\""
+  }
+}

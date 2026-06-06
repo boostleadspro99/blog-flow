@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { width: 380px; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; }
+    h2 { font-size: 18px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+    .subtitle { font-size: 12px; color: #64748b; margin-bottom: 16px; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+    .card label { display: block; font-size: 11px; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .card input { width: 100%; padding: 8px 10px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #e2e8f0; font-size: 12px; font-family: monospace; }
+    .card input:focus { outline: none; border-color: #3b82f6; }
+    .row { display: flex; gap: 8px; }
+    .row button { flex: 1; }
+    .btn { padding: 10px 16px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s; }
+    .btn-primary { background: #3b82f6; color: white; width: 100%; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-primary:disabled { background: #475569; cursor: not-allowed; }
+    .btn-sm { padding: 6px 12px; font-size: 11px; }
+    .status { margin-top: 10px; padding: 10px 12px; border-radius: 8px; font-size: 12px; display: none; }
+    .status.show { display: block; }
+    .status.success { background: #065f46; color: #6ee7b7; border: 1px solid #059669; }
+    .status.error { background: #7f1d1d; color: #fca5a5; border: 1px solid #dc2626; }
+    .status.info { background: #1e3a5f; color: #93c5fd; border: 1px solid #3b82f6; }
+    .status.loading { background: #3b3b0a; color: #fde047; border: 1px solid #ca8a04; }
+    .cookie-info { font-size: 11px; color: #64748b; margin-top: 8px; line-height: 1.6; }
+    .step { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+    .step-num { background: #3b82f6; color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; flex-shrink: 0; }
+    .step-text { font-size: 12px; color: #94a3b8; line-height: 1.5; }
+    .step-text a { color: #60a5fa; }
+  </style>
+</head>
+<body>
+  <h2>🔑 Gemini Cookies</h2>
+  <p class="subtitle">Extract cookies from your browser automatically</p>
+
+  <!-- Step-by-step instructions (shown when not configured) -->
+  <div id="steps" class="card">
+    <div class="step"><span class="step-num">1</span><span class="step-text">Log in at <a href="https://gemini.google.com" target="_blank">gemini.google.com</a></span></div>
+    <div class="step"><span class="step-num">2</span><span class="step-text">Sign in to <b>PuterImage Studio</b> and copy your API token from Settings</span></div>
+    <div class="step"><span class="step-num">3</span><span class="step-text">Paste token below and click <b>Extract</b></span></div>
+  </div>
+
+  <!-- Configuration -->
+  <div class="card">
+    <label>API Backend URL</label>
+    <input type="text" id="apiUrl" placeholder="https://your-app.com" spellcheck="false">
+    <label style="margin-top: 10px;">Your JWT Token</label>
+    <input type="password" id="token" placeholder="eyJhbGciOiJIUzI1NiIs..." spellcheck="false">
+  </div>
+
+  <button class="btn btn-primary" id="extractBtn">🔍 Extract & Send Cookies</button>
+
+  <div id="status"></div>
+
+  <div class="cookie-info" id="cookieInfo"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
