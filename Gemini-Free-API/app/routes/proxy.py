@@ -66,8 +66,8 @@ async def proxy_image(
                 from app.db_models import UserCookie
                 from app.encryption import decrypt_value
 
-                async with get_session_factory() as db:
-                    result = await db.execute(
+                with get_session_factory() as db:
+                    result = db.execute(
                         select(UserCookie).where(UserCookie.user_id == user_id)
                     )
                     cookie_row = result.scalar_one_or_none()

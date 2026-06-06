@@ -1,8 +1,8 @@
 import logging
-from typing import AsyncGenerator, Optional
+from typing import Generator
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import create_engine
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.config import settings
 
@@ -14,18 +14,7 @@ class Base(DeclarativeBase):
 
 
 _engine = None
-_async_session_factory = None
-
-
-def _clean_url(url: str) -> str:
-    """Normalize Neon DB URL for SQLAlchemy.
-    Uses psycopg (v3) driver — binary wheel, no C compiler needed."""
-    # Switch to psycopg driver (binary wheel, no compilation needed)
-    url = url.replace("+asyncpg", "+psycopg")
-    # Remove incompatible query params
-    for param in ("sslmode=require", "channel_binding=require"):
-        url = url.replace(f"&{param}", "").replace(f"?{param}", "")
-    return url
+_session_factory = None
 
 
 def get_engine():
@@ -33,54 +22,51 @@ def get_engine():
     if _engine is None:
         if not settings.database_url:
             raise RuntimeError("DATABASE_URL is not configured.")
-        url = _clean_url(settings.database_url)
-        _engine = create_async_engine(
-            url,
-            echo=False,
-            pool_size=5,
-            max_overflow=10,
+        # Use sync engine with psycopg2 — simple, reliable, no async driver headaches
+        url = (
+            settings.database_url
+            .replace("+asyncpg", "+psycopg2")
+            .replace("+psycopg", "+psycopg2")
         )
+        # Remove query params that confuse psycopg2
+        for param in ("sslmode=require", "channel_binding=require"):
+            url = url.replace(f"&{param}", "").replace(f"?{param}", "")
+        _engine = create_engine(url, echo=False, pool_size=5, max_overflow=10)
     return _engine
 
 
 def get_session_factory():
-    global _async_session_factory
-    if _async_session_factory is None:
-        _async_session_factory = async_sessionmaker(
-            get_engine(),
-            class_=AsyncSession,
-            expire_on_commit=False,
-        )
-    return _async_session_factory
+    global _session_factory
+    if _session_factory is None:
+        _session_factory = sessionmaker(bind=get_engine(), expire_on_commit=False)
+    return _session_factory
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """FastAPI dependency: yields a database session."""
+def get_db() -> Generator[Session, None, None]:
+    """FastAPI dependency: yields a sync database session."""
     if not settings.database_url:
         raise RuntimeError("DATABASE_URL is not configured.")
-    factory = get_session_factory()
-    async with factory() as session:
-        try:
-            yield session
-        finally:
-            await session.close()
+    session = get_session_factory()()
+    try:
+        yield session
+    finally:
+        session.close()
 
 
-async def init_db():
+def init_db():
     """Create all tables if they don't exist."""
     if not settings.database_url:
         logger.warning("DATABASE_URL not set, skipping table creation.")
         return
     engine = get_engine()
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    Base.metadata.create_all(bind=engine)
     logger.info("Database tables created/verified.")
 
 
-async def close_db():
+def close_db():
     """Close the database engine."""
-    global _engine, _async_session_factory
+    global _engine, _session_factory
     if _engine:
-        await _engine.dispose()
+        _engine.dispose()
         _engine = None
-        _async_session_factory = None
+        _session_factory = None

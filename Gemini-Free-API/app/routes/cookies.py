@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.db_models import User, UserCookie
@@ -17,13 +17,12 @@ router = APIRouter(prefix="/user", tags=["cookies"])
 
 @router.get("/cookies", response_model=CookieResponse)
 async def get_cookies(
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(
+    cookie_row = db.execute(
         select(UserCookie).where(UserCookie.user_id == current_user.id)
-    )
-    cookie_row = result.scalar_one_or_none()
+    ).scalar_one_or_none()
 
     if not cookie_row:
         return CookieResponse(has_cookies=False, is_valid=False)
@@ -39,7 +38,7 @@ async def get_cookies(
 @router.post("/cookies", response_model=CookieResponse)
 async def update_cookies(
     body: CookieUpdateRequest,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     from app.main import gemini_pool
@@ -48,11 +47,9 @@ async def update_cookies(
     encrypted_1psid = encrypt_value(body.secure_1psid)
     encrypted_1psidts = encrypt_value(body.secure_1psidts)
 
-    # Upsert user_cookies
-    result = await db.execute(
+    cookie_row = db.execute(
         select(UserCookie).where(UserCookie.user_id == current_user.id)
-    )
-    cookie_row = result.scalar_one_or_none()
+    ).scalar_one_or_none()
 
     if cookie_row:
         cookie_row.encrypted_1psid = encrypted_1psid
@@ -65,10 +62,10 @@ async def update_cookies(
         )
         db.add(cookie_row)
 
-    await db.commit()
-    await db.refresh(cookie_row)
+    db.commit()
+    db.refresh(cookie_row)
 
-    # Try to validate by initializing a Gemini client
+    # Validate cookies via Gemini client
     is_valid = False
     error_msg = None
 
@@ -86,11 +83,10 @@ async def update_cookies(
             error_msg = str(e)
             logger.warning(f"Cookie validation failed for user {current_user.id}: {e}")
 
-    # Update validation status
     cookie_row.is_valid = is_valid
     cookie_row.last_validated_at = datetime.now(timezone.utc) if is_valid else cookie_row.last_validated_at
     cookie_row.error_message = error_msg
-    await db.commit()
+    db.commit()
 
     return CookieResponse(
         has_cookies=True,

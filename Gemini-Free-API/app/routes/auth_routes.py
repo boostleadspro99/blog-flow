@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from sqlalchemy.orm import selectinload
 
 from app.auth import create_access_token, hash_password, verify_password
@@ -32,9 +32,9 @@ def _user_to_response(user: User, has_cookies: bool = False, cookies_valid: bool
     )
 
 
-async def _get_user_with_cookies(db: AsyncSession, user_id):
+def _get_user_with_cookies(db: Session, user_id):
     """Fetch user with eagerly loaded cookies relationship."""
-    result = await db.execute(
+    result = db.execute(
         select(User)
         .options(selectinload(User.cookies))
         .where(User.id == user_id)
@@ -43,13 +43,13 @@ async def _get_user_with_cookies(db: AsyncSession, user_id):
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
+async def register(body: RegisterRequest, db: Session = Depends(get_db)):
     # Check email uniqueness
-    existing = await db.execute(select(User).where(User.email == body.email))
+    existing = db.execute(select(User).where(User.email == body.email))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered.")
     # Check username uniqueness
-    existing = await db.execute(select(User).where(User.username == body.username))
+    existing = db.execute(select(User).where(User.username == body.username))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already taken.")
 
@@ -59,10 +59,10 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
         password_hash=hash_password(body.password),
     )
     db.add(user)
-    await db.commit()
+    db.commit()
 
     # Re-fetch with relationships loaded
-    fresh = await _get_user_with_cookies(db, user.id)
+    fresh = _get_user_with_cookies(db, user.id)
     token = create_access_token(str(fresh.id), fresh.email)
     has_cookies = fresh.cookies is not None
     logger.info(f"New user registered: {fresh.email} ({fresh.id})")
@@ -77,8 +77,8 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
+async def login(body: LoginRequest, db: Session = Depends(get_db)):
+    result = db.execute(
         select(User).options(selectinload(User.cookies)).where(User.email == body.email)
     )
     user = result.scalar_one_or_none()
@@ -89,7 +89,7 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is deactivated.")
 
     user.last_login_at = datetime.now(timezone.utc)
-    await db.commit()
+    db.commit()
 
     has_cookies = user.cookies is not None
     token = create_access_token(str(user.id), user.email)
@@ -106,10 +106,10 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    user = await _get_user_with_cookies(db, current_user.id)
+    user = _get_user_with_cookies(db, current_user.id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
     has_cookies = user.cookies is not None

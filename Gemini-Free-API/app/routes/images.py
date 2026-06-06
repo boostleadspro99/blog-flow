@@ -16,7 +16,7 @@ from app.encryption import decrypt_value
 from app.config import settings
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from gemini_webapi.constants import Model, Endpoint
 
@@ -95,7 +95,7 @@ def remove_gemini_watermark(image_bytes: bytes) -> bytes:
 async def image_generations(
     request: ImageRequest,
     fast_request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     if settings.disable_auth:
@@ -103,7 +103,7 @@ async def image_generations(
         return await _generate_legacy(request, fast_request)
 
     # Get user's cookies
-    result = await db.execute(
+    result = db.execute(
         select(UserCookie).where(UserCookie.user_id == current_user.id)
     )
     cookie_row = result.scalar_one_or_none()
@@ -133,7 +133,7 @@ async def image_generations(
     except Exception as e:
         cookie_row.is_valid = False
         cookie_row.error_message = str(e)
-        await db.commit()
+        db.commit()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to initialize Gemini client with your cookies: {e}",
