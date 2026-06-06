@@ -28,9 +28,9 @@ def get_engine():
             if f"{prefix}://" in url:
                 url = url.replace(f"{prefix}://", "+psycopg2://")
                 break
-        # Remove query params that confuse psycopg2
-        for param in ("sslmode=require", "channel_binding=require"):
-            url = url.replace(f"&{param}", "").replace(f"?{param}", "")
+        # Remove only channel_binding (incompatible with psycopg2).
+        # KEEP sslmode=require — psycopg2 needs it for Neon SSL.
+        url = url.replace("&channel_binding=require", "").replace("?channel_binding=require&", "?").replace("?channel_binding=require", "")
         _engine = create_engine(url, echo=False, pool_size=5, max_overflow=10)
     return _engine
 

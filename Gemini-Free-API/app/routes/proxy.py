@@ -124,8 +124,8 @@ async def proxy_image(
                 if should_remove:
                     try:
                         content = remove_watermark(content)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Watermark removal skipped: {e}")
                 return Response(content=content, media_type="image/png")
             else:
                 raise HTTPException(

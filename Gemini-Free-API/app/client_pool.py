@@ -39,8 +39,8 @@ class PooledClient:
         if self._client:
             try:
                 await self._client.close()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Non-critical: closing old GeminiClient failed: {e}")
         self._client = GeminiClient(
             secure_1psid=self.secure_1psid,
             secure_1psidts=self.secure_1psidts,
@@ -62,8 +62,8 @@ class PooledClient:
         if self._client:
             try:
                 await self._client.close()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Non-critical: closing GeminiClient failed: {e}")
         self._initialized = False
 
 
