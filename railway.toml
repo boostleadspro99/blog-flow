@@ -1,0 +1,9 @@
+[build]
+builder = "nixpacks"
+buildCommand = "pip install -r Gemini-Free-API/requirements.txt"
+
+[deploy]
+startCommand = "cd Gemini-Free-API && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-3897}"
+
+[service]
+port = 3897
