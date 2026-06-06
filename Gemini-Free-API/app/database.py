@@ -18,8 +18,10 @@ _async_session_factory = None
 
 
 def _clean_url(url: str) -> str:
-    """Normalize Neon DB URL for SQLAlchemy asyncpg.
-    asyncpg connects via SSL by default — no extra params needed."""
+    """Normalize Neon DB URL for SQLAlchemy.
+    Uses psycopg (v3) driver — binary wheel, no C compiler needed."""
+    # Switch to psycopg driver (binary wheel, no compilation needed)
+    url = url.replace("+asyncpg", "+psycopg")
     # Remove incompatible query params
     for param in ("sslmode=require", "channel_binding=require"):
         url = url.replace(f"&{param}", "").replace(f"?{param}", "")
