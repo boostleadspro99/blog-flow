@@ -44,8 +44,13 @@ async def update_cookies(
     from app.main import gemini_pool
 
     # Encrypt cookies
-    encrypted_1psid = encrypt_value(body.secure_1psid)
-    encrypted_1psidts = encrypt_value(body.secure_1psidts)
+    try:
+        encrypted_1psid = encrypt_value(body.secure_1psid)
+        encrypted_1psidts = encrypt_value(body.secure_1psidts)
+    except Exception as e:
+        logger.error(f"Encryption failed: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Encryption error — check FERNET_KEY. {e}")
 
     cookie_row = db.execute(
         select(UserCookie).where(UserCookie.user_id == current_user.id)
