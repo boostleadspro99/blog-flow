@@ -17,13 +17,21 @@ _engine = None
 _async_session_factory = None
 
 
+def _clean_url(url: str) -> str:
+    """Normalize Neon DB URL for SQLAlchemy asyncpg.
+    asyncpg connects via SSL by default — no extra params needed."""
+    # Remove incompatible query params
+    for param in ("sslmode=require", "channel_binding=require"):
+        url = url.replace(f"&{param}", "").replace(f"?{param}", "")
+    return url
+
+
 def get_engine():
     global _engine
     if _engine is None:
         if not settings.database_url:
             raise RuntimeError("DATABASE_URL is not configured.")
-        # asyncpg uses 'ssl' not 'sslmode'
-        url = settings.database_url.replace("sslmode=require", "ssl=require")
+        url = _clean_url(settings.database_url)
         _engine = create_async_engine(
             url,
             echo=False,
