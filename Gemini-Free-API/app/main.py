@@ -25,7 +25,7 @@ async def lifespan(app: FastAPI):
 
     if settings.database_url:
         logger.info("Initializing database tables...")
-        await init_db()
+        init_db()
         logger.info("Database tables ready.")
     else:
         logger.warning("DATABASE_URL not set — database features disabled.")
@@ -38,7 +38,7 @@ async def lifespan(app: FastAPI):
     if gemini_pool:
         await gemini_pool.close_all()
         logger.info("Gemini client pool closed.")
-    await close_db()
+    close_db()
 
 
 app = FastAPI(title="PuterImage Studio API", version="0.2.0", lifespan=lifespan)
